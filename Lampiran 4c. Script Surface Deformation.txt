@@ -1,0 +1,86 @@
+cls
+
+set A=surface_deformation.ps
+
+psbasemap -R106.3/107.9/-7.8/-6.0 -JM16 -K -Ba0.4f0.2g0.4/a0.2g0.4WSNE -Xc -Yc -P > %A%
+
+makecpt -Cglobe -Z > surface.cpt
+grdimage Indonesia2.nc -R -JM -Csurface.cpt -O -K -V >> %A%
+
+%pscoast -R -JM -K -P -Dh -B -W1p -Lf107.65/-6.35/1/50 -O >> %A%
+pscoast -JM -R -K -O -Dh -B -W1p -Lf106.56/-6.47/0/25 --LABEL_FONT_SIZE=13p -Tf106.56/-6.26/0.75i/2 --HEADER_FONT_SIZE=13p --HEADER_OFFSET=0.05i >> %A%
+echo 106.54 -6.14 0 0 1 LB U | pstext -R -JM -F+f15 -O -K >> %A%
+echo 106.54 -6.42.5 0 0 1 LT km | pstext -R -JM -F+f9 -O -K >> %A%
+
+psxy -R -JM16 -W2,brown -O -K Java_fault.gmt >> %A%
+psxy -R -JM16 -W2,blue -O -K NP2_gmt_fault_map_proj.dat >> %A%
+psxy -R -JM16 -Sc0.3 -W0.3,black -Gyellow -O -K CORS1.txt >> %A%
+psxy -R -JM16 -Sc0.09 -Gblack -O -K CORS1.txt >> %A%
+pstext -R -JM16 -F+f9p -O -K CORS2.txt >> %A%
+pstext -R -JM16 -F+f8p,Helvetica-Bold,black -O -K Kota.txt >> %A%
+pstext -R -JM16 -F+f12p,Helvetica-Bold,blue -O -K Laut.txt >> %A%
+pstext -R -JM16 -F+a+f6p,Helvetica-Bold,brown -O -K Sesar.txt >> %A%
+%psmeca -R -JM -Sd1c -W0.5 -O -K focal.txt >> %A%
+
+%gawk "{print $1, $2, $3, $4/10}" gps_offshore1.dat | psxy -JM -R -K -Gwhite -SV0.5c+e+n0.4c+a45c -W0.12c,black -O >> %A%
+%gawk "{print $1, $2, $6, $7*100}" CORS_Horizontal.dat | psxy -JM -R -K -Gwhite -SV0.3c+e+n0.1c+a30c -W0.08c,blue -O >> %A%
+%gawk "{print $1, $2, $6, $7*100}" CORS_Vertikal.dat | psxy -JM -R -K -Gwhite -SV0.3c+e+n0.1c+a30c -W0.08c,red -O >> %A%
+gawk "{print $1, $2, $6, $7*100}" surface_deformation.dat | psxy -JM -R -K -Gwhite -SV0.3c+e+n0.1c+a30c -W0.08c,red -O >> %A%
+%gawk "{print $1, $2, $6, $7*100}" NP2_gmt_fault_map_proj.dat | psxy -JM -R -K -Gwhite -SV0.3c+e+n0.1c+a30c -W0.08c,red -O >> %A%
+
+%earthquake_location
+%diperoleh dari http://equake-rc.info/SRCMOD/searchmodels/viewmodel/s2011TOHOKU03WEIx/
+
+%TITIK Epicenter
+echo 107.0944 -6.8355 BMKG | psxy -R -JM -Gmagenta -Sa0.4 -W0.2,black -O -K >> %A%
+%echo 107.07 -6.84 GCMT | psxy -R -JM -Gbrown -Sa0.4 -W0.2,black -O -K >> %A%
+%echo 107.02 -6.81 GFZ | psxy -R -JM -Gorange -Sa0.4 -W0.2,black -O -K >> %A%
+
+%echo 107.07 -6.84 15 349 83 163 5.6 107 -7.17 GCMT | psmeca -R -JM -Sa1c -W0.5 -C -O -K >> %A%
+%echo 107.02 -6.81 10 348 89 177 5.5 107 -6.5 GFZ | psmeca -R -JM -Sa1c -W0.5 -C -O -K >> %A%
+echo 107.0944 -6.8355 9.973 347.2 82.8 167.2 5.6 106.9 -6.55 BMKG | psmeca -R -JM -Sa1c -W0.5 -C -O -K >> %A%
+
+%LEGENDA 
+echo 107.43 -7.34 > legendas
+echo 107.85 -7.34 >> legendas
+echo 107.85 -7.75 >> legendas
+echo 107.43 -7.75 >> legendas
+psxy -R -JM -Gwhite -W1,white -O -K legendas >> %A%
+
+echo 107.45 -7.41 0 0 1 LB LEGENDA : | pstext -R -JM -F+f15p -O -K >> %A%
+
+%echo 107.55	-7.29 90 1 | psxy -R -JM -Gwhite -SV0.3c+e+n0.1c+a30c -W0.08c,black -O -K >> %A%
+%echo 107.68	-7.28 0 0 1 LT Obs CORS (1cm land) | pstext -R -JM -F+f6p -O -K >> %A%
+
+%echo 107.50	-7.65 90 1 | psxy -R -JM -Gwhite -SV0.3c+e+n0.1c+a30c -W0.08c,blue -O -K >> %A%
+%echo 107.63	-7.64 0 0 1 LT Pergeseran Horizontal | pstext -R -JM -F+f8p -O -K >> %A%
+
+echo 107.45	-7.65 90 1 | psxy -R -JM -W1.8,blue -SV0s.1c+n0.3c+a40c -O -K>> %A%
+echo 107.58	-7.64 0 0 1 LT Patahan | pstext -R -JM -F+f8p -O -K >> %A%
+
+%echo 107.23	-7.71 90 1 | psxy -R -JM -Gwhite -SV0.3c+e+n0.1c+a30c -W0.08c,red -O -K >> %A%
+%echo 107.36	-7.70 0 0 1 LT Pergeseran Vertikal | pstext -R -JM -F+f8p -O -K >> %A%
+
+echo 107.45	-7.71 90 1 | psxy -R -JM -Gwhite -SV0.3c+e+n0.1c+a30c -W0.08c,red -O -K >> %A%
+echo 107.58	-7.70 0 0 1 LT Pergeseran (1cm) | pstext -R -JM -F+f8p -O -K >> %A%
+
+echo 107.45	-7.59 90 1 | psxy -R -JM -W1.8,brown -SV0s.1c+n0.3c+a40c -O -K >> %A%
+echo 107.58	-7.58 0 0 1 LT Sesar | pstext -R -JM -F+f8p -O -K >> %A%
+
+echo 107.505 -7.47 90 1 | psxy -R -JM -Gmagenta -Sa0.5 -W0.2,black  -O -K >> %A%
+echo 107.58 -7.46 0 0 1 LT Epicenter BMKG | pstext -R -JM -F+f8p -O -K >> %A%
+
+%echo 107.605 -7.17 90 1 | psxy -R -JM -Gbrown -Sa0.4 -W0.2,black  -O -K >> %A%
+%echo 107.68 -7.16 0 0 1 LT Epicenter GCMT | pstext -R -JM -F+f6p -O -K >> %A%
+
+%echo 107.605 -7.23 90 1 | psxy -R -JM -Gorange -Sa0.4 -W0.2,black  -O -K >> %A%
+%echo 107.68 -7.22 0 0 1 LT Epicenter GFZ | pstext -R -JM -F+f6p -O -K >> %A%
+
+echo 107.505 -7.53 90 1 | psxy -R -JM -Sc0.4 -W0.4,black -Gyellow -O -K >> %A%
+echo 107.505 -7.53 90 1 | psxy -R -JM -Sc0.09 -Gblack -O -K >> %A%
+echo 107.58 -7.52 0 0 1 LT Stasiun CORS | pstext -R -JM -F+f8p -O >> %A% 
+
+psconvert %A% -Tg -A0.2c -E720
+
+del *.cpt
+del gmt.*

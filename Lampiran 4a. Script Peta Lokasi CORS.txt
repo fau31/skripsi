@@ -1,0 +1,49 @@
+cls
+
+set A=PetalokasiCORS.ps
+
+psbasemap -R106.3/108/-7.4/-6.2 -JM16 -K -Ba0.4f0.2g0.4/a0.2g0.4WSNE -Xc -Yc -P > %A%
+
+makecpt -Cglobe -Z > surface.cpt
+grdimage Indonesia2.nc -R -JM -Csurface.cpt -O -K -V >> %A%
+
+%pscoast -R -JM -K -P -Dh -B -W1p -Lf107.65/-6.35/1/50 -O >> %A%
+pscoast -JM -R -K -O -Dh -B -W1p -Lf106.56/-6.67/0/25 --LABEL_FONT_SIZE=13p -Tf106.56/-6.46/0.75i/2 --HEADER_FONT_SIZE=13p --HEADER_OFFSET=0.05i >> %A%
+echo 106.54 -6.34 0 0 1 LB U | pstext -R -JM -F+f15 -O -K >> %A%
+echo 106.54 -6.62.5 0 0 1 LT km | pstext -R -JM -F+f9 -O -K >> %A%
+
+psxy -R -JM16 -W2,brown -O -K Java_fault.gmt >> %A%
+psxy -R -JM16 -Sc0.3 -W0.5,black -Gyellow -O -K CORS1.txt >> %A%
+psxy -R -JM16 -Sc0.07 -Gblack -O -K CORS1.txt >> %A%
+pstext -R -JM16 -F+f7p -O -K CORS2.txt >> %A%
+pstext -R -JM16 -F+f8p,Helvetica-Bold,blue -O -K Kota.txt >> %A%
+pstext -R -JM16 -F+a+f6p,Helvetica-Bold,brown -O -K Sesar.txt >> %A%
+
+%earthquake_location
+%diperoleh dari http://equake-rc.info/SRCMOD/searchmodels/viewmodel/s2011TOHOKU03WEIx/
+
+%echo 107.0944 -6.8355 BMKG | psxy -R -JM -Gmagenta -Sa0.4 -W0.2,black -O -K >> %A%
+
+%LEGENDA 
+echo 107.52 -7.16 > legendas
+echo 107.94 -7.16 >> legendas
+echo 107.94 -7.36 >> legendas
+echo 107.52 -7.36 >> legendas
+psxy -R -JM -Gwhite -W1,white -O -K legendas >> %A%
+
+echo 107.55 -7.21 0 0 1 LB LEGENDA : | pstext -R -JM -F+f12p -O -K >> %A%
+
+%echo 107.605 -7.31 90 1 | psxy -R -JM -Gmagenta -Sa0.4 -W0.2,black  -O -K >> %A%
+%echo 107.68 -7.3 0 0 1 LT Epicenter BMKG | pstext -R -JM -F+f8p -O -K >> %A%
+
+echo 107.55	-7.31 90 1 | psxy -R -JM -W1.5,brown -SV0s.1c+n0.3c+a40c -O -K >> %A%
+echo 107.68	-7.3 0 0 1 LT Sesar | pstext -R -JM -F+f8p -O -K >> %A%
+
+echo 107.605 -7.26 90 1 | psxy -R -JM -Sc0.3 -W0.5,black -Gyellow -O -K >> %A%
+echo 107.605 -7.26 90 1 | psxy -R -JM -Sc0.07 -Gblack -O -K >> %A%
+echo 107.68 -7.25 0 0 1 LT Stasiun CORS | pstext -R -JM -F+f8p -O >> %A% 
+
+psconvert %A% -Tg -A0.2c -E720
+
+del *.cpt
+del gmt.*

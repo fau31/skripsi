@@ -1,0 +1,127 @@
+%% Inverse problem
+%% Invert strike-slip & dip-slip on a fault plane given surface deformation on the surface due to Mw 5.6 earthquake
+%% Rino Salman
+close all
+clear all
+
+%% Load data (units: cm)
+[lonS, latS, e, n, u] = textread('synthetic_displacement.txt', '%f %f %f %f %f', 'headerlines', 1);
+
+%% Create matrix d
+% we arrange all east displacements, then all north displacements, and so on
+% d = [e1
+% e2
+% .
+% .
+% eN
+% n1
+% n2
+% .
+% .
+% nN
+% u1
+% u2
+% .
+% .
+% uN]
+d = [e; n; u];
+% convert unit from cm to m
+d = d/100;
+
+%% Convert coordinates of data from lonlat to xy
+% first, we need to have origin for coordinate transformation
+lon0 = mean(lonS(:));
+lat0 = mean(latS(:));
+
+% Second, let's do the coordinate transformation (unit: km)
+[xS, yS] = latlon_to_xy(latS(:), lonS(:), lat0, lon0);
+
+% Convert the unit from km to m
+xS = xS * 1000;
+yS = yS * 1000;
+
+%% Compute Green's functions (remember our 1-m rule)
+%% Fault length, width, and slip from the scaling laws
+fault_length = 7980;
+fault_width = 5649;
+
+%% Fault depth, strike, dip, rake from BMKG (units: meter and degree)
+fault_depth = 9973;
+strike = 347.2;
+dip = 82.8;
+rake = -167.2;
+
+% Convert unit from degree to radian
+strike = deg2rad(strike);
+dip = deg2rad(dip);
+rake = deg2rad(rake);
+
+%% Coordinate of the upper left corner of the fault
+lonF = 107.094;
+latF = -6.836;
+
+%% Convert fault coordinate from lonlat to xy (unit: km)
+[xF, yF] = latlon_to_xy(latF, lonF, lat0, lon0);
+
+% Convert the unit from km to m
+xF = xF * 1000;
+yF = yF * 1000;
+
+%% Compute distances from upper left coordinates of the fault to coordinates of data on the surface
+distance_x = xS - xF;
+distance_y = yS - yF;
+
+%% Run okada
+nu = 0.25;
+
+% Strike-slip component
+fault_type = 1; %(strike-slip)
+strike_slip = 1; % 1-m strike-slip
+[enudisp_strike_slip(:,1), enudisp_strike_slip(:,2), enudisp_strike_slip(:,3)] = computeDisplacementOkada85(strike_slip,distance_x(:),distance_y(:),nu,dip,fault_depth,fault_length,fault_width,fault_type,strike);
+
+% Dip-slip component
+fault_type = 2; %(dip-slip)
+dip_slip = 1; % 1-m dip-slip
+[enudisp_dip_slip(:,1), enudisp_dip_slip(:,2), enudisp_dip_slip(:,3)] = computeDisplacementOkada85(dip_slip,distance_x(:),distance_y(:),nu,dip,fault_depth,fault_length,fault_width,fault_type,strike);
+
+%% Create matrix G
+% Total east motion due to 1m of strike-slip and dip-slip
+e_all = [enudisp_strike_slip(:,1) enudisp_dip_slip(:,1)];
+
+% Total north motion due to 1m of strike-slip and dip-slip
+n_all = [enudisp_strike_slip(:,2) enudisp_dip_slip(:,2)];
+
+% Total vertical motion due to 1m of strike-slip and dip-slip
+u_all = [enudisp_strike_slip(:,3) enudisp_dip_slip(:,3)];
+
+% Combine them all
+% we also need to arrange all east displacements, then all north displacements, and so on
+G = [e_all; n_all; u_all];
+
+%% Do inversion
+m_est = (G'*G)\(G'*d);
+slip = sqrt(m_est(1)^2 + m_est(2)^2);
+
+%% Compute data prediction based on m_est
+d_pred = G*m_est;
+N_data = numel(e);
+e_pred = d_pred(1:N_data);
+n_pred = d_pred(N_data+1:N_data*2);
+
+%% plot data vectors
+scale=10;
+figure
+quiver(xS(:),yS(:),e*scale,n*scale,'k');hold on
+xlabel('East (meter)')
+ylabel('North (meter)')
+title('Data (meter)')
+axis equal
+
+%% plot model vectors
+scale=10;
+figure
+quiver(xS(:),yS(:),e_pred*scale,n_pred*scale,'r');hold on
+xlabel('East (meter)')
+ylabel('North (meter)')
+title('Model (meter)')
+axis equal

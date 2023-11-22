@@ -1,0 +1,112 @@
+%% Forward problem
+%% Predict surface deformation on the surface due to an earthquake
+%% Rino Salman, June 2020
+close all
+clear all
+
+%% Fault length, width, and slip from the scaling laws
+fault_length = 7980;
+fault_width = 5649;
+slip = 1.0229;
+
+%% Fault depth, strike, dip, rake from USGS (units: meter and degree)
+fault_depth = 9973;
+%you can varying this number (e.g., 100, 1000, 10000) to see the effect of earthquake depths to the surface deformation
+strike = 347.2;
+dip = 82.8;
+rake = -167.2;
+
+% Convert unit from degree to radian
+strike = deg2rad(strike);
+dip = deg2rad(dip);
+rake = deg2rad(rake);
+
+%% Define a region box on the surface, then generate fake locations
+lonLowerLeft = 106.25958;
+latLowerLeft = -7.55918;
+lonUpperRight = 107.83798;
+latUpperRight = -6.11297;
+increment = 0.5; %this is in degree (use deg2km)
+[lonS, latS]=meshgrid(lonLowerLeft:increment:lonUpperRight, 
+latLowerLeft:increment:latUpperRight);
+
+%% Coordinate of the upper left corner of the fault
+lonF = 107.094;
+latF = -6.836;
+
+%% FROM THIS LINE, READ ONLY, DO NOT CHANGE ! %%
+
+%% Convert fake locations from lonlat to xy
+% first, we need to have origin for coordinate transformation
+lon0 = mean(lonS(:));
+lat0 = mean(latS(:));
+
+% Second, let's do the coordinate transformation (unit: km)
+[xS, yS] = latlon_to_xy(latS(:), lonS(:), lat0, lon0);
+
+% Convert the unit from km to m
+xS = xS * 1000;
+yS = yS * 1000;
+
+%% Convert fault coordinate from lonlat to xy (unit: km)
+[xF, yF] = latlon_to_xy(latF, lonF, lat0, lon0);
+
+% Convert the unit from km to m
+xF = xF * 1000;
+yF = yF * 1000;
+
+%% Split strike slip and dip slip components.
+strike_slip = slip*cos(rake);
+dip_slip = slip*sin(rake);
+
+%% Compute distances from upper left coordinates of the fault to fake locations on the surface
+distance_x = xS - xF;
+distance_y = yS - yF;
+
+%% Run okada
+nu = 0.25;
+
+% Strike-slip component
+fault_type = 1; %(strike-slip)
+[enudisp_strike_slip(:,1), enudisp_strike_slip(:,2), enudisp_strike_slip(:,3)] = computeDisplacementOkada85(strike_slip,distance_x(:),distance_y(:),nu,dip,fault_depth,fault_length,fault_width,fault_type,strike);
+
+% Dip-slip component
+fault_type = 2; %(dip-slip)
+[enudisp_dip_slip(:,1), enudisp_dip_slip(:,2), enudisp_dip_slip(:,3)] = computeDisplacementOkada85(dip_slip,distance_x(:),distance_y(:),nu,dip,fault_depth,fault_length,fault_width,fault_type,strike);
+
+% compute total motion
+enu_disp = enudisp_strike_slip + enudisp_dip_slip;
+
+%% Compute another end of fault coordinates only for plotting purpose
+strike = 348;
+lonF2 = lonF + km2deg(fault_length/1000)*cosd(strike);
+latF2 = latF + km2deg(fault_length/1000)*sind(strike);
+[xF2, yF2] = latlon_to_xy(latF2, lonF2, lat0, lon0);
+
+%% plot to results
+scale=10;
+figure
+plot([xF,xF2],[yF,yF2],'k-','linewidth',2);hold on
+plot(xF,yF,'o');hold on
+plot(xF2,yF2,'go');hold on
+quiver(xS(:),yS(:),enu_disp(:,1)*scale,enu_disp(:,2)*scale,'r');hold on
+xlabel('East (meter)')
+ylabel('North (meter)')
+title('Predicted surface deformation due to the 2022 Mw 5.6 Cianjur earthquake (meter)')
+axis equal
+
+%Menampilkan Nilai slip
+disp('nilai slip x')
+disp(enu_disp(:,1))
+
+disp('nilai slip y')
+disp(enu_disp(:,2))
+
+disp('nilai slip u')
+disp(enu_disp(:,3))
+
+disp('Longitude')
+disp(lonS)
+
+disp('Latitude')
+disp(latS)

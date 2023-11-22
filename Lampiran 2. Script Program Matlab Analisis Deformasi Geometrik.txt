@@ -1,0 +1,200 @@
+%==================PROGRAM UJI DEFORMASI===================%
+
+clc;
+format long;
+
+%Menginput file excel koordinat epoch 1 dan epoch 2
+
+fn1=input('nama file excel koordinat epoch 1 : ', 's');
+k1=xlsread(fn1);
+Eo=k1(:,1); 
+No=k1(:,2); 
+Uo=k1(:,3); 
+
+fn2=input('nama file excel koordinat epoch 2 : ', 's');
+k2=xlsread(fn2);
+Eo1=k2(:,1); 
+No1=k2(:,2); 
+Uo1=k2(:,3); 
+
+%Menginput nama file matriks Qd dengan format .xlsx
+qq=input('nama file Matriks Qd : ', 's');
+
+%Menginput nama file matriks Ud dengan format .xlsx
+uq=input('nama file Matriks Ud : ', 's');
+
+%Menginput  Nilai varian aposteori epoch I dan II 
+ap1=input('Nilai varian aposteori epoch I : ');
+ap2=input('Nilai varian aposteori epoch II : ');
+
+%Menginput Nilai hasil tabel fisher untuk Uji deformasi
+F_uji1=input('Nilai hasil tabel Fisher uji kesebangunan jaring : ');
+F_uji2=input('Nilai hasil tabel Fisher uji pergeseran titik : ');
+
+%Proses Hitungan 1 / Nilai Pergeseran
+m=length(Eo);
+for i=1:m
+    dE((3*i)-2)=Eo1(i)-Eo(i);
+    dN((3*i)-1)=No1(i)-No(i);
+    dU(3*i)=Uo1(i)-Uo(i);
+end
+
+%Menghitung matriks d
+d=zeros((3*m),1);
+d(1)=dE(1);
+d(2)=dN(2);
+d(3)=dU(3);
+d(4)=dE(4);
+d(5)=dN(5);
+d(6)=dU(6);
+d(7)=dE(7);
+d(8)=dN(8);
+d(9)=dU(9);
+d(10)=dE(10);
+d(11)=dN(11);
+d(12)=dU(12);
+d(13)=dE(13);
+d(14)=dN(14);
+d(15)=dU(15);
+d(16)=dE(16);
+d(17)=dN(17);
+d(18)=dU(18);
+d(19)=dE(19);
+d(20)=dN(20);
+d(21)=dU(21);
+
+%Mendefinisikan Matriks Ud 
+Ud=xlsread(uq);  
+
+%Mendefinisikan Matriks Qd 
+Qd=xlsread(qq);  
+
+%Menghitung K dan Vd
+K=(inv(Ud*Qd*Ud'))*d;
+Vd=(Qd*-1)*Ud'*K;
+Vd_e=inv(Qd)*Vd;
+
+%Menghitung apriori dan aposteori pergeseran
+%Mendefinisikan aposteori epoch I dan II
+apos_1=ap1; %Input manual
+apos_2=ap2; %Input manual
+apriori=(apos_1+apos_2)/2; %Apriori Pergeseran
+
+r=18; %Jumlah persamaan
+aposteori=(Vd'*(inv(Qd))*Vd)/r; %Aposteori pergeseran
+
+
+%=======================UJI PERGESERAN TITIK
+
+%Menghitung Wd
+Nd=Ud'*(inv(Ud*Qd*Ud'))*Ud;
+
+inv_q=inv(Qd);
+c=m*6; %Jumlah Koordinat total epoch satu dan dua
+t=m*3; %Jumlah persamaan dE dN dU atau jumlah pergeseran
+for i=1:c
+    s(i,i)=inv_q(i,i); %Mendefinisikan Matriks S
+end
+
+for i=1:c
+    Wd(i,1)=s(i,i)*Vd(i,1)/((sqrt(apriori))*(sqrt(Nd(i,i))));
+end
+
+disp('Nilai Wd setiap koordinat setiap epoch')
+disp(Wd(1:c,1))
+
+%Menampilkan Matriks Pergeseran (d)
+disp('Nilai Pergeseran dalam meter')
+disp(d(1:t,1))
+
+%Menampilkan Matriks Korelat Pergeseran (K)
+disp('nilai korelat pergeseran dalam meter')
+disp(K(1:t,1))
+
+%Hasil UJI PERGESERAN TITIK
+disp('Hasil uji pergeseran titik')
+F_geser=F_uji2; %Hasil Nilai Tabel Fisher Pergeseran titik (Input manual)
+for i=1:c
+    pergeseran(i)=abs(Wd(i,1));
+    if pergeseran(i)<=F_geser
+        disp('  Uji Pergeseran titik : Ho diterima dan titik tidak mengalami pergeseran')
+    elseif pergeseran(i)>F_geser
+        disp('  Uji pergeseran titik : Ho ditolak dan titik mengalami pergeseran')
+    end
+end
+disp(' ')
+
+%Menampilkan Matriks Koreksi Pergeseran (Vd)
+disp('Nilai koreksi pergeseran (Vd) dalam meter')
+disp(Vd(1:t,1))
+disp('Nilai Koreksi Pergeseran (Vd_e) dalam meter')
+disp(Vd_e(1:t,1))
+
+%Menghitung Besar dan Arah Pergeseran
+for i=1:m
+    besar(i,1)=sqrt(((Eo1(i)-Eo(i))^2)+(No1(i)-No(i))^2);
+end
+
+%Menghitung Pergeseran Horizontal
+Hz=zeros(m,1);
+for i=1:m
+    Hz(i,1)=besar(i);
+end
+
+%Menghitung vektor pergeseran X (Easting) dan Y(Northing)
+VX=zeros(m,1);
+for i=1:m
+    VX(i,1)=d((3*i)-2,1);
+end
+
+VY=zeros(m,1);
+for i=1:m
+    VY(i,1)=d((3*i)-1,1);
+end
+
+%Menghitung vektor pergeseran Vertikal
+VU=zeros(m,1);
+for i=1:m
+    VU(i,1)=d((3*i),1);
+end
+
+%Menampilkan vektor pergeseran horizontal
+disp('Nilai Pergeseran horizontal')
+disp(Hz(1:m,1))
+
+%Menampilkan Pergeseran X (Easting)
+disp('Nilai Pergeseran X (Easting) dalam meter')
+disp(VX(1:m,1))
+
+%Menampilkan Pergeseran Y (Northing)
+disp('Nilai pergeseran Y (Northing) dalam meter')
+disp(VY(1:m,1))
+
+%Menampilkan Pergeseran Vertikal (Z atau Up)
+disp('Nilai Pergeseran Vertikal (Z atau U)')
+disp(VU(1:m,1))
+
+%Menghitung Arah Azimuth Pergeseran (Radian)
+
+for i=1:m
+    Alfa(i)=(atand((d((3*i)-2,1))/(d((3*i)-1,1))));
+    if (d((3*1)-2,1))>0&(d((3*1)-1,1))>0
+        Alfa(i)=Alfa(i);
+    elseif (d((3*1)-2,1))<0&(d((3*1)-1,1))>0
+        Alfa(i)=Alfa(i)+360;
+    else 
+        Alfa(i)=Alfa(i)+180;
+    end
+end
+
+%Menampilkan Besar Sudut Pergerakan Horizontal dalam Derajad
+disp('Arah Pergerakan Horizontal dalam Derajat')
+for i=1:m
+    format short;
+
+    D(i,1)=fix(Alfa(i));
+    M(i,1)=fix(((Alfa(i))-D(i,1))*60);
+    Sec(i,1)=(((((Alfa(i))-D(i,1))*60)-M(i,1))*60);
+    disp([D(i,1),M(i,1),Sec(i,1)]);
+end
+
